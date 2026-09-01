@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #37352f;
+  --muted: #787774;
+  --faint: #9b9a97;
+  --border: #ebeae8;
+  --border-strong: #dedcd9;
+  --hover: #f7f7f5;
+  --active: #f1f0ee;
+  --accent: #2f6fed;
+
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-archivo), sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(47, 111, 237, 0.14);
+}
+
+/* Popover entrance — origin-aware, fast, ease-out */
+.popover-enter {
+  animation: popover-in 150ms var(--ease-out-quart);
+  transform-origin: top left;
+}
+
+.popover-enter.origin-top-right {
+  transform-origin: top right;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover-enter {
+    animation: popover-fade 150ms ease;
+  }
+  @keyframes popover-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Row entrance for newly added rows */
+.row-enter {
+  animation: row-in 200ms var(--ease-out-quart);
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-enter {
+    animation: none;
+  }
+}
+
+/* Pressable feedback */
+.pressable {
+  transition: transform 140ms var(--ease-out-cubic), background-color 200ms ease;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active {
+    transform: none;
+  }
+}
+
+input,
+textarea {
+  outline: none;
+}
+
+/* Thin scrollbars for popover lists */
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
