@@ -11,6 +11,7 @@ export type SyncState = "loading" | "local" | "synced" | "saving" | "error";
 export function useApplications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [syncState, setSyncState] = useState<SyncState>("loading");
+  const [syncError, setSyncError] = useState<string | null>(null);
   const configuredRef = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,6 +31,7 @@ export function useApplications() {
         } else {
           setApplications(local);
           setSyncState(data.error ? "error" : "local");
+          setSyncError(data.detail ?? null);
         }
       } catch {
         if (cancelled) return;
@@ -54,9 +56,17 @@ export function useApplications() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ applications: apps }),
         });
-        setSyncState(res.ok ? "synced" : "error");
+        if (res.ok) {
+          setSyncState("synced");
+          setSyncError(null);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setSyncState("error");
+          setSyncError(data.detail ?? null);
+        }
       } catch {
         setSyncState("error");
+        setSyncError("Network error");
       }
     }, SAVE_DEBOUNCE_MS);
   }, []);
@@ -72,7 +82,7 @@ export function useApplications() {
     [persist]
   );
 
-  return { applications, update, syncState };
+  return { applications, update, syncState, syncError };
 }
 
 function loadLocal(): Application[] {

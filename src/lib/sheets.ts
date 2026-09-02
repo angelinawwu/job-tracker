@@ -79,10 +79,29 @@ export function sheetsConfigured(): boolean {
   );
 }
 
+/**
+ * Hosting dashboards (Vercel, etc.) store env values verbatim, so a key pasted
+ * from .env.local keeps its wrapping quotes and literal "\n" escapes, and one
+ * pasted from the JSON key file may have real newlines. Normalise all of them.
+ */
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+  return key.replace(/\\n/g, "\n").trim() + "\n";
+}
+
+/** Accepts either the bare id or a full sheet URL pasted by mistake. */
+function spreadsheetIdValue(): string {
+  const raw = process.env.GOOGLE_SHEETS_SPREADSHEET_ID!.trim();
+  return raw.match(/\/spreadsheets\/d\/([^/?#]+)/)?.[1] ?? raw;
+}
+
 function getSheetsClient() {
   const auth = new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim(),
+    key: normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY!),
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
   return google.sheets({ version: "v4", auth });
@@ -269,7 +288,7 @@ function toRow(
 async function readSheet() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID!,
+    spreadsheetId: spreadsheetIdValue(),
     range: range("A1:Z"),
     // Dates come back as serial numbers rather than display text, so parsing
     // does not depend on how the column happens to be formatted.
@@ -290,7 +309,7 @@ export async function readApplications(): Promise<Application[]> {
 
 export async function writeApplications(apps: Application[]): Promise<void> {
   const sheets = getSheetsClient();
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID!;
+  const spreadsheetId = spreadsheetIdValue();
 
   // Reuse the sheet's existing header so its wording and column order survive.
   const { headerRow } = await readSheet();

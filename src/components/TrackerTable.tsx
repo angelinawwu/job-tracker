@@ -15,7 +15,7 @@ import TextCell from "./cells/TextCell";
 const GRID =
   "grid grid-cols-[108px_64px_minmax(120px,1fr)_minmax(150px,1.2fr)_minmax(160px,1.3fr)_minmax(130px,1fr)_minmax(140px,1.2fr)_36px]";
 
-function SyncBadge({ state }: { state: SyncState }) {
+function SyncBadge({ state, detail }: { state: SyncState; detail: string | null }) {
   const config: Record<SyncState, { label: string; className: string }> = {
     loading: { label: "Loading…", className: "text-faint" },
     local: { label: "Local only — connect Google Sheets in .env.local", className: "text-faint" },
@@ -24,11 +24,16 @@ function SyncBadge({ state }: { state: SyncState }) {
     error: { label: "Sync error — data kept locally", className: "text-red-600" },
   };
   const { label, className } = config[state];
-  return <span className={`text-[12px] transition-colors ${className}`}>{label}</span>;
+  return (
+    <span className={`text-[12px] transition-colors ${className}`} title={detail ?? undefined}>
+      {label}
+      {state === "error" && detail ? ` (${detail})` : null}
+    </span>
+  );
 }
 
 export default function TrackerTable() {
-  const { applications, update, syncState } = useApplications();
+  const { applications, update, syncState, syncError } = useApplications();
   const lastAddedId = useRef<string | null>(null);
 
   const allTags = useMemo(() => {
@@ -66,7 +71,7 @@ export default function TrackerTable() {
             {applications.length} application{applications.length === 1 ? "" : "s"}
           </p>
         </div>
-        <SyncBadge state={syncState} />
+        <SyncBadge state={syncState} detail={syncError} />
       </header>
 
       <div className="overflow-x-auto rounded-lg border border-line">
