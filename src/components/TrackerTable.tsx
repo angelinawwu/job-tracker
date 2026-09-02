@@ -8,11 +8,12 @@ import DateCell from "./cells/DateCell";
 import LinkCell from "./cells/LinkCell";
 import MaterialsCell from "./cells/MaterialsCell";
 import NotesCell from "./cells/NotesCell";
+import ReferralCell from "./cells/ReferralCell";
 import StatusCell from "./cells/StatusCell";
 import TextCell from "./cells/TextCell";
 
 const GRID =
-  "grid grid-cols-[108px_40px_minmax(120px,1fr)_minmax(150px,1.2fr)_minmax(160px,1.3fr)_minmax(130px,1fr)_minmax(140px,1.2fr)_36px]";
+  "grid grid-cols-[108px_64px_minmax(120px,1fr)_minmax(150px,1.2fr)_minmax(160px,1.3fr)_minmax(130px,1fr)_minmax(140px,1.2fr)_36px]";
 
 function SyncBadge({ state }: { state: SyncState }) {
   const config: Record<SyncState, { label: string; className: string }> = {
@@ -73,8 +74,16 @@ export default function TrackerTable() {
           {/* Header row */}
           <div className={`${GRID} border-b border-line bg-hoverbg text-[12px] font-medium text-muted`}>
             <span className="px-2 py-1.5">Date applied</span>
-            <span className="py-1.5 text-center" title="Job posting link">
-              Link
+            <span className="flex items-center justify-center py-1.5" title="Job posting link">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M6.5 9.5l3-3M7.25 4.75l1.1-1.1a2.62 2.62 0 013.7 3.7l-1.1 1.1M8.75 11.25l-1.1 1.1a2.62 2.62 0 01-3.7-3.7l1.1-1.1"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
             <span className="border-l border-line px-2 py-1.5">Company</span>
             <span className="border-l border-line px-2 py-1.5">Job title</span>
@@ -96,23 +105,29 @@ export default function TrackerTable() {
                 value={app.dateApplied}
                 onChange={(dateApplied) => patchRow(app.id, { dateApplied })}
               />
-              <LinkCell
-                value={app.link}
-                onChange={(link) => patchRow(app.id, { link })}
-                onMetadata={({ company, jobTitle }) => {
-                  update((prev) =>
-                    prev.map((a) =>
-                      a.id === app.id
-                        ? {
-                            ...a,
-                            company: a.company || company,
-                            jobTitle: a.jobTitle || jobTitle,
-                          }
-                        : a
-                    )
-                  );
-                }}
-              />
+              <div className="flex items-center justify-center gap-0.5">
+                <ReferralCell
+                  value={app.referral ?? ""}
+                  onChange={(referral) => patchRow(app.id, { referral })}
+                />
+                <LinkCell
+                  value={app.link}
+                  onChange={(link) => patchRow(app.id, { link })}
+                  onMetadata={({ company, jobTitle }) => {
+                    update((prev) =>
+                      prev.map((a) =>
+                        a.id === app.id
+                          ? {
+                              ...a,
+                              company: a.company || company,
+                              jobTitle: a.jobTitle || jobTitle,
+                            }
+                          : a
+                      )
+                    );
+                  }}
+                />
+              </div>
               <div className="border-l border-line">
                 <TextCell
                   value={app.company}

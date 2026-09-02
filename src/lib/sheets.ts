@@ -28,6 +28,7 @@ const COLUMN_ALIASES = {
   jobTitle: ["position title", "job title", "position", "role", "title"],
   dateApplied: ["date", "date applied", "applied"],
   link: ["link", "found on", "app method", "url", "posting", "job link"],
+  referral: ["referral", "referred by", "referrer"],
   materials: ["app materials", "materials", "application materials"],
   status: ["status"],
   notes: ["notes", "contact", "note"],
@@ -41,20 +42,28 @@ const DEFAULT_ORDER: Field[] = [
   "jobTitle",
   "dateApplied",
   "link",
+  "referral",
   "materials",
   "status",
   "notes",
 ];
 
-const DEFAULT_HEADER = [
-  "Company",
-  "Position Title",
-  "Date",
-  "Link",
-  "App Materials",
-  "Status",
-  "Notes",
-];
+/** Header text written for a field when the sheet has no column for it yet. */
+const HEADER_LABELS: Record<Field, string> = {
+  company: "Company",
+  jobTitle: "Position Title",
+  dateApplied: "Date",
+  link: "Link",
+  referral: "Referral",
+  materials: "App Materials",
+  status: "Status",
+  notes: "Notes",
+};
+
+const DEFAULT_HEADER = DEFAULT_ORDER.map((f) => HEADER_LABELS[f]);
+
+/** Sheets tops out at column Z for the range this module reads and writes. */
+const MAX_COLUMNS = 26;
 
 /** Sheets serial dates count from 1899-12-30. */
 const SHEETS_EPOCH_MS = Date.UTC(1899, 11, 30);
@@ -208,6 +217,7 @@ function fromRow(
   const company = cellText(row, columns.company);
   const jobTitle = cellText(row, columns.jobTitle);
   const link = cellText(row, columns.link);
+  const referral = cellText(row, columns.referral);
   const notes = cellText(row, columns.notes);
   const dateApplied = parseDate(
     columns.dateApplied < 0 ? "" : row[columns.dateApplied]
@@ -222,6 +232,7 @@ function fromRow(
     link,
     company,
     jobTitle,
+    referral,
     materials: parseMaterials(cellText(row, columns.materials)),
     status: parseStatus(cellText(row, columns.status), dateApplied, id),
     notes,
@@ -239,6 +250,7 @@ function toRow(
     jobTitle: app.jobTitle,
     dateApplied: app.dateApplied ? isoToSheetDate(app.dateApplied) : "",
     link: app.link,
+    referral: app.referral,
     materials: app.materials.join(", "),
     status: current?.label ?? "Pending",
     notes: app.notes,
@@ -283,9 +295,19 @@ export async function writeApplications(apps: Application[]): Promise<void> {
   // Reuse the sheet's existing header so its wording and column order survive.
   const { headerRow } = await readSheet();
   const hasHeader = headerRow.some((c) => String(c ?? "").trim() !== "");
-  const header = hasHeader ? headerRow.map((c) => String(c ?? "")) : DEFAULT_HEADER;
+  const header = hasHeader ? headerRow.map((c) => String(c ?? "")) : [...DEFAULT_HEADER];
   const columns = resolveColumns(header);
-  const width = Math.min(Math.max(header.length, DEFAULT_ORDER.length), 26);
+
+  // A field the sheet has no column for would be silently dropped on write, so
+  // give it one. This is how a tab created before a field existed (Referral,
+  // say) gains that column the first time the app saves.
+  for (const field of DEFAULT_ORDER) {
+    if (columns[field] >= 0 || header.length >= MAX_COLUMNS) continue;
+    columns[field] = header.length;
+    header.push(HEADER_LABELS[field]);
+  }
+
+  const width = Math.min(Math.max(header.length, DEFAULT_ORDER.length), MAX_COLUMNS);
   const lastColumn = String.fromCharCode("A".charCodeAt(0) + width - 1);
 
   await sheets.spreadsheets.values.clear({

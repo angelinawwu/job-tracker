@@ -11,6 +11,7 @@ export interface Application {
   link: string;
   company: string;
   jobTitle: string;
+  referral: string;
   materials: string[];
   status: StatusPhase[]; // ordered; the last phase is the current one
   notes: string;
@@ -23,6 +24,7 @@ export function newApplication(): Application {
     link: "",
     company: "",
     jobTitle: "",
+    referral: "",
     materials: [],
     status: [
       {

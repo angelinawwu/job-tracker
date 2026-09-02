@@ -121,7 +121,7 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
                     setArmedId(null);
                   }}
                   onDrop={(e) => e.preventDefault()}
-                  className={`group rounded-md border border-line p-1.5 transition-[opacity,box-shadow,background-color] duration-200 ease-out ${
+                  className={`group rounded-md border border-line p-1.5 transition-[opacity,box-shadow,background-color] ease-out ${
                     i === 0 ? "bg-hoverbg" : ""
                   } ${isDragging ? "opacity-50 shadow-sm" : ""}`}
                 >
@@ -142,7 +142,7 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
                       }}
                       disabled={value.length < 2}
                       aria-label={`Reorder ${phase.label}`}
-                      className="-ml-0.5 grid h-4 w-3 shrink-0 cursor-grab place-items-center rounded text-faint opacity-0 transition-opacity duration-200 hover:text-muted focus-visible:opacity-100 active:cursor-grabbing disabled:hidden group-hover:opacity-100"
+                      className="-ml-0.5 grid h-4 w-3 shrink-0 cursor-grab place-items-center rounded text-faint opacity-0 transition-opacity hover:text-muted focus-visible:opacity-100 active:cursor-grabbing disabled:hidden group-hover:opacity-100"
                     >
                       <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor">
                         <circle cx="1" cy="1" r="1" />
