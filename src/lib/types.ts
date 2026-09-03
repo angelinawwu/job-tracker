@@ -1,3 +1,6 @@
+/** The sheet has one column per phase, so the history has a fixed ceiling. */
+export const MAX_PHASES = 6;
+
 export interface StatusPhase {
   id: string;
   label: string;

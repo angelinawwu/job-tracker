@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { statusStyle } from "@/lib/tags";
-import { todayISO, type StatusPhase } from "@/lib/types";
+import { MAX_PHASES, todayISO, type StatusPhase } from "@/lib/types";
 import Popover from "../Popover";
 
 interface StatusCellProps {
@@ -37,9 +37,10 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
 
   const current = value[value.length - 1];
   const currentStyle = statusStyle(current?.label ?? "Pending");
+  const full = value.length >= MAX_PHASES;
 
   const addPhase = (label: string) => {
-    if (!label.trim()) return;
+    if (!label.trim() || full) return;
     onChange([
       ...value,
       { id: crypto.randomUUID(), label: label.trim(), description: "", date: todayISO() },
@@ -190,32 +191,40 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
         </div>
 
         <div className="border-t border-line p-2">
-          <div className="flex flex-wrap gap-1">
-            {QUICK_PHASES.map((base) => {
-              const label = nextLabel(value, base);
-              const s = statusStyle(base);
-              return (
-                <button
-                  key={base}
-                  type="button"
-                  onClick={() => addPhase(label)}
-                  className="pressable inline-flex h-[20px] items-center rounded px-1.5 text-[11.5px] font-medium leading-none transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: s.bg, color: s.text }}
-                >
-                  + {label}
-                </button>
-              );
-            })}
-          </div>
-          <input
-            value={customLabel}
-            onChange={(e) => setCustomLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") addPhase(customLabel);
-            }}
-            placeholder="Custom phase, press Enter…"
-            className="mt-1.5 h-7 w-full rounded-md border border-line bg-hoverbg px-2 text-[12.5px] placeholder:text-faint focus:border-accent/50 focus:bg-white"
-          />
+          {full ? (
+            <p className="px-1 py-1 text-[11.5px] text-faint">
+              Up to {MAX_PHASES} phases are kept — remove one to add another.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1">
+                {QUICK_PHASES.map((base) => {
+                  const label = nextLabel(value, base);
+                  const s = statusStyle(base);
+                  return (
+                    <button
+                      key={base}
+                      type="button"
+                      onClick={() => addPhase(label)}
+                      className="pressable inline-flex h-[20px] items-center rounded px-1.5 text-[11.5px] font-medium leading-none transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: s.bg, color: s.text }}
+                    >
+                      + {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                value={customLabel}
+                onChange={(e) => setCustomLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addPhase(customLabel);
+                }}
+                placeholder="Custom phase, press Enter…"
+                className="mt-1.5 h-7 w-full rounded-md border border-line bg-hoverbg px-2 text-[12.5px] placeholder:text-faint focus:border-accent/50 focus:bg-white"
+              />
+            </>
+          )}
         </div>
       </Popover>
     </div>

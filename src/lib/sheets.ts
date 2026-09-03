@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import type { Application, StatusPhase } from "./types";
+import { MAX_PHASES, type Application, type StatusPhase } from "./types";
 
 /**
  * Google Sheets persistence layer.
@@ -18,12 +18,23 @@ import type { Application, StatusPhase } from "./types";
  * row is read to find which column holds which field, so the tab keeps its
  * human-friendly headers ("Company", "Position Title", "App Materials", ...)
  * and column order instead of being rewritten into the app's field names.
+ *
+ * Status history lives in "Phase 1" … "Phase 6" columns, one phase per cell,
+ * oldest first. Each cell holds `Label (MM/DD/YYYY)` on its first line and the
+ * phase's description on the lines after. "Status" keeps the current label so
+ * the sheet stays scannable (and filterable) on its own.
  */
 
 const SHEET_NAME = process.env.GOOGLE_SHEETS_TAB_NAME || "Applications";
 
+type PhaseField = `phase${number}`;
+const PHASE_FIELDS = Array.from(
+  { length: MAX_PHASES },
+  (_, i) => `phase${i + 1}` as PhaseField
+);
+
 /** Fields the app needs, and the header names each one may appear under. */
-const COLUMN_ALIASES = {
+const COLUMN_ALIASES: Record<string, readonly string[]> = {
   company: ["company", "company name", "employer"],
   jobTitle: ["position title", "job title", "position", "role", "title"],
   dateApplied: ["date", "date applied", "applied"],
@@ -32,12 +43,27 @@ const COLUMN_ALIASES = {
   materials: ["app materials", "materials", "application materials"],
   status: ["status"],
   notes: ["notes", "contact", "note"],
-} as const;
+  ...Object.fromEntries(
+    PHASE_FIELDS.map((f, i) => [f, [`phase ${i + 1}`, `phase${i + 1}`, `stage ${i + 1}`]])
+  ),
+};
 
-type Field = keyof typeof COLUMN_ALIASES;
+type CoreField =
+  | "company"
+  | "jobTitle"
+  | "dateApplied"
+  | "link"
+  | "referral"
+  | "materials"
+  | "status"
+  | "notes";
+type Field = CoreField | PhaseField;
 
-/** Column order used when a tab has no recognisable header row. */
-const DEFAULT_ORDER: Field[] = [
+/**
+ * Column order used when a tab has no recognisable header row. Phase columns
+ * come after Notes so tabs laid out before they existed keep their positions.
+ */
+const CORE_ORDER: CoreField[] = [
   "company",
   "jobTitle",
   "dateApplied",
@@ -47,6 +73,7 @@ const DEFAULT_ORDER: Field[] = [
   "status",
   "notes",
 ];
+const DEFAULT_ORDER: Field[] = [...CORE_ORDER, ...PHASE_FIELDS];
 
 /** Header text written for a field when the sheet has no column for it yet. */
 const HEADER_LABELS: Record<Field, string> = {
@@ -58,6 +85,7 @@ const HEADER_LABELS: Record<Field, string> = {
   materials: "App Materials",
   status: "Status",
   notes: "Notes",
+  ...Object.fromEntries(PHASE_FIELDS.map((f, i) => [f, `Phase ${i + 1}`])),
 };
 
 const DEFAULT_HEADER = DEFAULT_ORDER.map((f) => HEADER_LABELS[f]);
@@ -123,15 +151,15 @@ function normalizeHeader(value: Cell): string {
 function resolveColumns(headerRow: Cell[]): Record<Field, number> {
   const normalized = headerRow.map(normalizeHeader);
   const columns = {} as Record<Field, number>;
-  for (const field of Object.keys(COLUMN_ALIASES) as Field[]) {
-    columns[field] = normalized.findIndex((h) =>
-      (COLUMN_ALIASES[field] as readonly string[]).includes(h)
-    );
+  for (const field of DEFAULT_ORDER) {
+    columns[field] = normalized.findIndex((h) => COLUMN_ALIASES[field].includes(h));
   }
-  // Fall back to the documented order for anything the header didn't cover.
-  const unmatched = DEFAULT_ORDER.filter((f) => columns[f] === -1);
+  // Fall back to the documented order for any core field the header didn't
+  // cover. Phase columns are never guessed: a tab that predates them gets them
+  // appended on the next write instead, so nothing of the user's is overwritten.
+  const unmatched = CORE_ORDER.filter((f) => columns[f] === -1);
   for (const field of unmatched) {
-    const index = DEFAULT_ORDER.indexOf(field);
+    const index = CORE_ORDER.indexOf(field);
     const taken = Object.values(columns).includes(index);
     columns[field] = taken ? -1 : index;
   }
@@ -188,23 +216,68 @@ function parseMaterials(value: string): string[] {
     .filter(Boolean);
 }
 
+/** `Label (MM/DD/YYYY)` on the first line, description on the rest. */
+function encodePhase(phase: StatusPhase): string {
+  const head = phase.date
+    ? `${phase.label} (${isoToSheetDate(phase.date)})`
+    : phase.label;
+  const description = phase.description.trim();
+  return description ? `${head}\n${description}` : head;
+}
+
 /**
- * The sheet stores one current status label per row, while the app models an
- * ordered history. Every application starts as "Pending", so a label other
- * than that becomes a second phase on top of it.
+ * Inverse of encodePhase, tolerant of hand-typed cells: a first line with no
+ * parenthesised date (or one that isn't a date, like "Interview (Onsite)") is
+ * taken whole as the label and dated to the application.
  */
-function parseStatus(label: string, dateApplied: string, seed: string): StatusPhase[] {
-  const phases: StatusPhase[] = [
-    { id: `${seed}-pending`, label: "Pending", description: "", date: dateApplied },
-  ];
-  const current = label.trim();
-  if (current && current.toLowerCase() !== "pending") {
-    phases.push({
-      id: `${seed}-current`,
-      label: current,
-      description: "",
-      date: dateApplied,
-    });
+function decodePhase(
+  text: string,
+  fallbackDate: string,
+  id: string
+): StatusPhase | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const [first, ...rest] = trimmed.split(/\r?\n/);
+  const match = first.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+  const date = match ? parseDate(match[2]) : "";
+  const label = (date && match ? match[1] : first).trim();
+  return {
+    id,
+    label: label || "Pending",
+    description: rest.join("\n").trim(),
+    date: date || fallbackDate,
+  };
+}
+
+/**
+ * Builds the ordered history from the Phase columns. Rows written before those
+ * columns existed only have a Status label, so they get the legacy shape:
+ * "Pending" first, then the label if it is anything else.
+ *
+ * A Status label edited by hand in the sheet that no longer matches the newest
+ * phase is appended as a new phase, so edits made there aren't lost either.
+ */
+function parseStatus(
+  row: Cell[],
+  columns: Record<Field, number>,
+  dateApplied: string,
+  seed: string
+): StatusPhase[] {
+  const phases = PHASE_FIELDS.map((field, i) =>
+    decodePhase(cellText(row, columns[field]), dateApplied, `${seed}-p${i}`)
+  ).filter((p): p is StatusPhase => p !== null);
+
+  if (phases.length === 0) {
+    phases.push({ id: `${seed}-pending`, label: "Pending", description: "", date: dateApplied });
+  }
+  const current = cellText(row, columns.status);
+  const newest = phases[phases.length - 1];
+  if (
+    current &&
+    current.toLowerCase() !== newest.label.toLowerCase() &&
+    phases.length < MAX_PHASES
+  ) {
+    phases.push({ id: `${seed}-current`, label: current, description: "", date: dateApplied });
   }
   return phases;
 }
@@ -253,7 +326,7 @@ function fromRow(
     jobTitle,
     referral,
     materials: parseMaterials(cellText(row, columns.materials)),
-    status: parseStatus(cellText(row, columns.status), dateApplied, id),
+    status: parseStatus(row, columns, dateApplied, id),
     notes,
   };
 }
@@ -263,7 +336,9 @@ function toRow(
   columns: Record<Field, number>,
   width: number
 ): string[] {
-  const current = app.status[app.status.length - 1];
+  // Only the newest MAX_PHASES fit in the sheet; the oldest are the ones to lose.
+  const phases = app.status.slice(-MAX_PHASES);
+  const current = phases[phases.length - 1];
   const values: Record<Field, string> = {
     company: app.company,
     jobTitle: app.jobTitle,
@@ -273,9 +348,12 @@ function toRow(
     materials: app.materials.join(", "),
     status: current?.label ?? "Pending",
     notes: app.notes,
+    ...Object.fromEntries(
+      PHASE_FIELDS.map((f, i) => [f, phases[i] ? encodePhase(phases[i]) : ""])
+    ),
   };
   const row = new Array<string>(width).fill("");
-  for (const field of Object.keys(values) as Field[]) {
+  for (const field of DEFAULT_ORDER) {
     const index = columns[field];
     if (index >= 0 && index < width) {
       row[index] =
