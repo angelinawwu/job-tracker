@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Job Tracker
+
+A minimal job application tracker built with Next.js. Track companies, roles,
+application materials, referrals, notes, and a full status history (Applied →
+Interview → Offer, etc.) per application, with an editable table UI.
+
+Data is persisted to a Google Sheet if configured, so you can view and edit it
+either from the app or directly in Sheets. If no Google Sheets credentials are
+set, the app falls back to browser `localStorage` and works entirely locally.
+
+## Features
+
+- Editable table of applications: company, position, date applied, link,
+  application materials, referral/found-via, notes.
+- Per-application status history (up to 6 phases), each with a label,
+  description, and date — the latest phase is shown as the current status.
+- Google Sheets sync as the persistence layer, treating the sheet as the
+  source of truth for column layout (matches your existing header names).
+- Local-only mode (no setup required) using `localStorage` when Sheets isn't
+  configured.
+- Link metadata fetching (e.g. to pull a favicon/title for a job posting URL).
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the dev server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Google Sheets Setup (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+By default the app stores data in your browser's `localStorage`. To sync with
+a Google Sheet instead:
 
-## Learn More
+1. Create a Google Cloud project: https://console.cloud.google.com
+2. Enable the **Google Sheets API** for the project.
+3. Create a Service Account (IAM & Admin > Service Accounts) and generate a
+   JSON key for it.
+4. Create a spreadsheet with a header row, then share it with the service
+   account's email (Editor access) — uncheck "Notify people", since service
+   accounts have no inbox.
+5. Copy `.env.example` to `.env.local` and fill in:
+   - `GOOGLE_SHEETS_SPREADSHEET_ID` — the id from the sheet URL
+     (`https://docs.google.com/spreadsheets/d/<THIS_PART>/edit`)
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — `client_email` from the JSON key
+   - `GOOGLE_PRIVATE_KEY` — `private_key` from the JSON key (keep the `\n`
+     escapes, wrap the whole value in double quotes)
+   - `GOOGLE_SHEETS_TAB_NAME` — optional, defaults to `Applications`
 
-To learn more about Next.js, take a look at the following resources:
+The header row's columns are matched by name, in any order: `Company`,
+`Position Title`, `Date`, `Link`, `App Materials`, `Status`, `Notes`
+(`Company Name`, `Found On`/`App Method`, and `Contact` are also recognized).
+Status history is stored in `Phase 1` … `Phase 6` columns, oldest first.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Restart the dev server after editing `.env.local`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+  app/
+    page.tsx                 # entry point, renders the tracker table
+    api/applications/route.ts    # CRUD for applications (Sheets or local)
+    api/link-metadata/route.ts   # fetches metadata for a pasted job link
+  components/
+    TrackerTable.tsx          # main editable table
+    cells/                    # per-column cell components (status, date, ...)
+    Popover.tsx, Calendar.tsx, DeleteRowButton.tsx
+  lib/
+    sheets.ts                 # Google Sheets persistence layer
+    types.ts                  # Application/StatusPhase types
+    useApplications.ts        # data-fetching hook
+    tags.ts                   # tag/label helpers
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Available Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start the development server
+- `npm run build` — build for production
+- `npm run start` — run the production build
+- `npm run lint` — run ESLint
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org) (App Router)
+- React + TypeScript
+- Tailwind CSS
+- [googleapis](https://www.npmjs.com/package/googleapis) for Sheets access
