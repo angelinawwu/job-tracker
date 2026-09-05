@@ -13,7 +13,7 @@ import StatusCell from "./cells/StatusCell";
 import TextCell from "./cells/TextCell";
 
 const GRID =
-  "grid grid-cols-[108px_64px_minmax(120px,1fr)_minmax(150px,1.2fr)_minmax(160px,1.3fr)_minmax(130px,1fr)_minmax(140px,1.2fr)_36px]";
+  "grid grid-cols-[108px_64px_minmax(120px,1fr)_minmax(150px,1.2fr)_minmax(160px,1.3fr)_minmax(170px,1fr)_minmax(140px,1.2fr)_36px]";
 
 function SyncBadge({ state, detail }: { state: SyncState; detail: string | null }) {
   const config: Record<SyncState, { label: string; className: string }> = {

@@ -71,17 +71,17 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-full w-full items-center gap-1.5 px-2 text-left transition-colors hover:bg-hoverbg"
+        className="flex h-full w-full items-center gap-1.5 overflow-hidden px-2 text-left transition-colors hover:bg-hoverbg"
       >
         <span
-          className="inline-flex h-[18px] items-center gap-1 rounded px-1.5 text-[11.5px] font-medium leading-none"
+          className="inline-flex h-[18px] shrink-0 items-center gap-1 whitespace-nowrap rounded px-1.5 text-[11.5px] font-medium leading-none"
           style={{ backgroundColor: currentStyle.bg, color: currentStyle.text }}
         >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: currentStyle.dot }} />
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: currentStyle.dot }} />
           {current?.label ?? "Pending"}
         </span>
         {value.length > 1 && (
-          <span className="text-[11px] tabular-nums text-faint">+{value.length - 1}</span>
+          <span className="shrink-0 text-[11px] tabular-nums text-faint">+{value.length - 1}</span>
         )}
       </button>
 
