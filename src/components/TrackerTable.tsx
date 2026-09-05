@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { DEFAULT_TAGS } from "@/lib/tags";
 import { newApplication, type Application } from "@/lib/types";
 import { useApplications, type SyncState } from "@/lib/useApplications";
+import DeleteRowButton from "./DeleteRowButton";
 import DateCell from "./cells/DateCell";
 import LinkCell from "./cells/LinkCell";
 import MaterialsCell from "./cells/MaterialsCell";
@@ -167,24 +168,7 @@ export default function TrackerTable() {
                   onChange={(notes) => patchRow(app.id, { notes })}
                 />
               </div>
-              <div className="flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => deleteRow(app.id)}
-                  className="pressable grid h-6 w-6 place-items-center rounded-md text-faint opacity-0 transition-opacity hover:bg-hoverbg hover:text-red-500 group-hover:opacity-100"
-                  aria-label="Delete row"
-                >
-                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2.5 3.5h9M5.5 3.5v-1a1 1 0 011-1h1a1 1 0 011 1v1M3.5 3.5l.5 8a1 1 0 001 1h4a1 1 0 001-1l.5-8"
-                      stroke="currentColor"
-                      strokeWidth="1.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
+              <DeleteRowButton onConfirm={() => deleteRow(app.id)} />
             </div>
           ))}
 

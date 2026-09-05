@@ -50,18 +50,40 @@ export default function MaterialsCell({ value, onChange, allTags }: MaterialsCel
     }
   }, [open]);
 
+  // Canonical order in which tags are listed in the selector (defaults
+  // first, then any custom tags in the order they were introduced).
+  // Selected tags are always sorted to match this order, regardless of
+  // the order the user picked them in.
+  const allOptions = useMemo(
+    () => Array.from(new Set([...Object.keys(DEFAULT_TAGS), ...allTags])),
+    [allTags]
+  );
+
+  const sortTags = (tags: string[]) =>
+    [...tags].sort((a, b) => {
+      const ia = allOptions.indexOf(a);
+      const ib = allOptions.indexOf(b);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+  const sortedValue = sortTags(value);
+
   const options = useMemo(() => {
-    const all = Array.from(new Set([...Object.keys(DEFAULT_TAGS), ...allTags]));
     const q = query.trim().toLowerCase();
-    return all.filter((t) => !q || t.toLowerCase().includes(q));
-  }, [allTags, query]);
+    return allOptions.filter((t) => !q || t.toLowerCase().includes(q));
+  }, [allOptions, query]);
 
   const trimmed = query.trim();
   const exactExists = options.some((t) => t.toLowerCase() === trimmed.toLowerCase());
   const showCreate = trimmed.length > 0 && !exactExists;
 
   const toggle = (tag: string) => {
-    onChange(value.includes(tag) ? value.filter((t) => t !== tag) : [...value, tag]);
+    onChange(
+      sortTags(value.includes(tag) ? value.filter((t) => t !== tag) : [...value, tag])
+    );
     setQuery("");
     inputRef.current?.focus();
   };
@@ -73,8 +95,8 @@ export default function MaterialsCell({ value, onChange, allTags }: MaterialsCel
         onClick={() => setOpen((o) => !o)}
         className="flex h-full w-full flex-wrap content-center items-center gap-1 overflow-hidden px-2 py-1 text-left transition-colors hover:bg-hoverbg"
       >
-        {value.length > 0 ? (
-          value.map((t) => <Pill key={t} name={t} />)
+        {sortedValue.length > 0 ? (
+          sortedValue.map((t) => <Pill key={t} name={t} />)
         ) : (
           <span className="text-[13px] text-faint">Empty</span>
         )}
@@ -82,7 +104,7 @@ export default function MaterialsCell({ value, onChange, allTags }: MaterialsCel
 
       <Popover open={open} onClose={() => setOpen(false)} className="w-[240px]">
         <div className="flex flex-wrap items-center gap-1 border-b border-line bg-hoverbg p-1.5">
-          {value.map((t) => (
+          {sortedValue.map((t) => (
             <Pill key={t} name={t} onRemove={() => onChange(value.filter((v) => v !== t))} />
           ))}
           <input
