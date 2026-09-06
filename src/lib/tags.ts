@@ -5,15 +5,15 @@ export interface TagStyle {
 }
 
 export const TAG_PALETTE: Record<string, TagStyle> = {
-  green: { bg: "#dbeddb", text: "#1c3829", dot: "#6c9b7d" },
-  purple: { bg: "#e8deee", text: "#412454", dot: "#9d68b5" },
-  blue: { bg: "#d3e5ef", text: "#183347", dot: "#527da5" },
-  yellow: { bg: "#fdecc8", text: "#402c1b", dot: "#cb912f" },
-  grey: { bg: "#e3e2e0", text: "#32302c", dot: "#8f8e8a" },
-  red: { bg: "#ffe2dd", text: "#5d1715", dot: "#e16f64" },
-  orange: { bg: "#fadec9", text: "#49290e", dot: "#d9730d" },
-  pink: { bg: "#f5e0e9", text: "#4c2337", dot: "#c14c8a" },
-  brown: { bg: "#eee0da", text: "#442a1e", dot: "#9f6b53" },
+  green: { bg: "#d8f0ce", text: "#0b351f", dot: "#6c9b7d" },
+  purple: { bg: "#e5d1f0", text: "#391153", dot: "#9d68b5" },
+  blue: { bg: "#c8e3f3", text: "#0f2c42", dot: "#527da5" },
+  yellow: { bg: "#ffe9bc", text: "#4d2b0d", dot: "#cb912f" },
+  grey: { bg: "#dfddda", text: "#332917", dot: "#8f8e8a" },
+  red: { bg: "#ffd9d3", text: "#540f0a", dot: "#e16f64" },
+  orange: { bg: "#ffd7ba", text: "#421f00", dot: "#d9730d" },
+  pink: { bg: "#fad0e2", text: "#4b0f2c", dot: "#c14c8a" },
+  brown: { bg: "#f2d7cc", text: "#421e0e", dot: "#9f6b53" },
 };
 
 export const DEFAULT_TAGS: Record<string, keyof typeof TAG_PALETTE> = {
@@ -23,6 +23,7 @@ export const DEFAULT_TAGS: Record<string, keyof typeof TAG_PALETTE> = {
   Cover: "yellow",
   Transcript: "grey",
   References: "red",
+  Github: "pink",
 };
 
 const CUSTOM_COLOR_CYCLE: (keyof typeof TAG_PALETTE)[] = [
