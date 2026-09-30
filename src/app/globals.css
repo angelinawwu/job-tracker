@@ -135,3 +135,23 @@ textarea {
   background: var(--border-strong);
   border-radius: 3px;
 }
+
+/* Sankey reveal — bands wipe in left to right, following the flow */
+.flow-reveal {
+  animation: flow-wipe 700ms var(--ease-out-quart) 60ms both;
+}
+
+@keyframes flow-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-reveal {
+    animation: none;
+  }
+}

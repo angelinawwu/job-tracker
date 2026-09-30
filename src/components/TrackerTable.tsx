@@ -5,6 +5,7 @@ import { DEFAULT_TAGS } from "@/lib/tags";
 import { newApplication, type Application } from "@/lib/types";
 import { useApplications, type SyncState } from "@/lib/useApplications";
 import DeleteRowButton from "./DeleteRowButton";
+import FlowChart from "./FlowChart";
 import DateCell from "./cells/DateCell";
 import LinkCell from "./cells/LinkCell";
 import MaterialsCell from "./cells/MaterialsCell";
@@ -185,6 +186,8 @@ export default function TrackerTable() {
           </button>
         </div>
       </div>
+
+      <FlowChart applications={applications} />
     </div>
   );
 }
