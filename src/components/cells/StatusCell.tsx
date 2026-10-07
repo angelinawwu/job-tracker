@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { statusStyle } from "@/lib/tags";
 import { MAX_PHASES, todayISO, type StatusPhase } from "@/lib/types";
+import Calendar from "../Calendar";
 import Popover from "../Popover";
 
 interface StatusCellProps {
@@ -34,6 +35,9 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
   // the description textareas keeps working.
   const [armedId, setArmedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  // The calendar opens inline in the row rather than as a nested popover,
+  // since a second portal would count as an outside click and close this one.
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
 
   const current = value[value.length - 1];
   const currentStyle = statusStyle(current?.label ?? "Pending");
@@ -85,7 +89,14 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
         )}
       </button>
 
-      <Popover open={open} onClose={() => setOpen(false)} className="w-[300px]">
+      <Popover
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setEditingDateId(null);
+        }}
+        className="w-[300px]"
+      >
         <div className="thin-scroll max-h-[300px] overflow-y-auto p-2">
           <p className="px-1 pb-1.5 text-[11px] font-medium text-faint">
             Status history — newest first, drag to reorder
@@ -161,9 +172,19 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
                       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: s.dot }} />
                       {phase.label}
                     </span>
-                    <span className="ml-auto text-[11px] tabular-nums text-faint">
-                      {phase.date}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingDateId((id) => (id === phase.id ? null : phase.id))
+                      }
+                      aria-label={`Edit date for ${phase.label}`}
+                      aria-expanded={editingDateId === phase.id}
+                      className={`ml-auto rounded px-1 text-[11px] tabular-nums transition-colors hover:bg-white hover:text-muted ${
+                        editingDateId === phase.id ? "bg-white text-muted" : "text-faint"
+                      }`}
+                    >
+                      {phase.date || "No date"}
+                    </button>
                     {value.length > 1 && (
                       <button
                         type="button"
@@ -177,6 +198,17 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
                       </button>
                     )}
                   </div>
+                  {editingDateId === phase.id && (
+                    <div className="mt-1 flex justify-center rounded-md border border-line bg-white">
+                      <Calendar
+                        value={phase.date}
+                        onSelect={(date) => {
+                          updatePhase(phase.id, { date });
+                          setEditingDateId(null);
+                        }}
+                      />
+                    </div>
+                  )}
                   <textarea
                     value={phase.description}
                     onChange={(e) => updatePhase(phase.id, { description: e.target.value })}
