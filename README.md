@@ -58,6 +58,13 @@ Status history is stored in `Phase 1` … `Phase 6` columns, oldest first.
 
 Restart the dev server after editing `.env.local`.
 
+## Password Protection (optional)
+
+Set `APP_PASSWORD` (e.g. in Vercel's environment variables) to require a
+password. After entering it once, a browser is remembered for a year via an
+HTTP-only cookie; changing the password signs everyone out. If
+`APP_PASSWORD` is unset, the app is left open (handy for local dev).
+
 ## Project Structure
 
 ```

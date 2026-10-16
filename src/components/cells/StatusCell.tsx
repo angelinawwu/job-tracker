@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { statusStyle } from "@/lib/tags";
 import { MAX_PHASES, todayISO, type StatusPhase } from "@/lib/types";
 import Calendar from "../Calendar";
@@ -26,6 +26,39 @@ function move<T>(arr: T[], from: number, to: number): T[] {
   const [item] = copy.splice(from, 1);
   copy.splice(to, 0, item);
   return copy;
+}
+
+// Grows with its content up to two and a half lines, so a longer note shows a
+// cut-off third line that hints there is more to scroll to.
+const MAX_DESCRIPTION_LINES = 2.5;
+
+function DescriptionInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+    el.style.height = `${Math.min(el.scrollHeight, lineHeight * MAX_DESCRIPTION_LINES)}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Add a description…"
+      rows={1}
+      className="mt-1 w-full resize-none rounded bg-transparent px-0.5 text-[12px] leading-snug placeholder:text-faint focus:bg-white"
+    />
+  );
 }
 
 export default function StatusCell({ value, onChange }: StatusCellProps) {
@@ -209,12 +242,9 @@ export default function StatusCell({ value, onChange }: StatusCellProps) {
                       />
                     </div>
                   )}
-                  <textarea
+                  <DescriptionInput
                     value={phase.description}
-                    onChange={(e) => updatePhase(phase.id, { description: e.target.value })}
-                    placeholder="Add a description…"
-                    rows={phase.description ? 2 : 1}
-                    className="mt-1 w-full resize-none rounded bg-transparent px-0.5 text-[12px] leading-snug placeholder:text-faint focus:bg-white"
+                    onChange={(description) => updatePhase(phase.id, { description })}
                   />
                 </div>
               );
