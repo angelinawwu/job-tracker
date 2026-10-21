@@ -37,7 +37,7 @@ const NO_RESPONSE_COLOR = "#d3d1cd";
 function isTerminal(key: string): boolean {
   return (
     key === NO_RESPONSE ||
-    /offer|accept|reject|declin|withdraw|ghost/.test(key)
+    /offer|accept|reject|declin|withdr|ghost/.test(key)
   );
 }
 

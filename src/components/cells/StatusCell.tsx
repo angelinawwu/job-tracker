@@ -11,10 +11,10 @@ interface StatusCellProps {
   onChange: (phases: StatusPhase[]) => void;
 }
 
-const QUICK_PHASES = ["Assessment", "Interview", "Offer", "Rejected"];
+const QUICK_PHASES = ["Assessment", "Interview", "Offer", "Rejected", "Withdrew"];
 
 function nextLabel(phases: StatusPhase[], base: string): string {
-  if (base === "Offer" || base === "Rejected") return base;
+  if (base === "Offer" || base === "Rejected" || base === "Withdrew") return base;
   const count = phases.filter((p) =>
     p.label.toLowerCase().startsWith(base.toLowerCase())
   ).length;

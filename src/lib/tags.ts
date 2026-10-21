@@ -52,8 +52,8 @@ export function tagStyle(name: string): TagStyle {
 export function statusStyle(label: string): TagStyle {
   const l = label.toLowerCase();
   if (l.includes("offer") || l.includes("accept")) return TAG_PALETTE.green;
-  if (l.includes("reject") || l.includes("declin") || l.includes("withdraw"))
-    return TAG_PALETTE.red;
+  if (l.includes("withdr")) return TAG_PALETTE.purple;
+  if (l.includes("reject") || l.includes("declin")) return TAG_PALETTE.red;
   if (l.includes("interview")) return TAG_PALETTE.blue;
   if (l.includes("assessment") || l.includes("oa") || l.includes("test"))
     return TAG_PALETTE.yellow;
